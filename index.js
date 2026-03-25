@@ -13,9 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-console.log("GEMINI KEY:", process.env.GEMINI_API_KEY);
-
-// ✅ Home route → direct App.html open hoga
+// ✅ Direct App.html open
 app.get("/", (req, res) => {
   res.sendFile(path.resolve("public/App.html"));
 });
@@ -24,7 +22,16 @@ app.post("/api/evaluate", async (req, res) => {
   try {
     const { questions, answers } = req.body;
 
-    // 🔥 Prompt build (ALL questions ek saath)
+    console.log("Questions:", questions);
+    console.log("Answers:", answers);
+
+    // ✅ Safety check
+    if (!questions || !answers) {
+      return res.status(400).json({
+        error: "Questions or Answers missing"
+      });
+    }
+
     let prompt = "Evaluate these answers strictly:\n\n";
 
     questions.forEach((q, i) => {
@@ -32,7 +39,7 @@ app.post("/api/evaluate", async (req, res) => {
     });
 
     prompt += `
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON:
 {
   "results": [
     { "score": number (0-10), "analysis": "short explanation" }
@@ -66,7 +73,6 @@ Return ONLY valid JSON in this format:
       throw new Error("Empty response from Gemini");
     }
 
-    // 🔧 Clean JSON
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     let result;
